@@ -1,0 +1,12 @@
+{
+  "name": "dap-mock-server",
+  "version": "0.1.0",
+  "description": "Minimal mock server for the Dating Agent Protocol (DAP)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

@@ -1,0 +1,492 @@
+openapi: 3.0.3
+info:
+  title: Dating Agent Protocol (DAP) API
+  description: |
+    Core API for AI agents to negotiate trusted human connections across
+    platforms — progressive disclosure, bilateral consent, privacy by default.
+
+    **Auth**: `X-API-Key` + `Authorization: Bearer <token>` on all endpoints
+    except `/.well-known/dap-provider.json`.
+
+    **Errors**: RFC 7807 Problem Details with `type`, `status`, `title`, `detail`.
+  version: 0.1.0
+  contact:
+    name: DAP Working Group
+    url: https://dap.dev
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+
+servers:
+  - url: http://localhost:3000
+    description: Mock development server
+
+tags:
+  - name: Provider
+    description: Provider metadata
+  - name: Identity
+    description: Human identity verification
+  - name: Discovery
+    description: Find compatible principals
+  - name: Connections
+    description: Connection lifecycle
+
+paths:
+  /.well-known/dap-provider.json:
+    get:
+      operationId: get_provider_card
+      summary: Get provider card
+      tags: [Provider]
+      security: []
+      responses:
+        '200':
+          description: Provider card
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderCard'
+
+  /dap/v1/identity/verify:
+    get:
+      operationId: verify_identity
+      summary: Get identity verification status
+      description: Returns verification status for the authenticated principal. No PII.
+      tags: [Identity]
+      security:
+        - apiKey: []
+          bearerAuth: []
+      responses:
+        '200':
+          description: Identity verification status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdentityResponse'
+        '401':
+          $ref: '#/components/responses/Error'
+
+  /dap/v1/discover:
+    post:
+      operationId: discover_candidates
+      summary: Search for compatible principals
+      tags: [Discovery]
+      security:
+        - apiKey: []
+          bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DiscoveryRequest'
+      responses:
+        '200':
+          description: Discovery results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscoveryResponse'
+        '401':
+          $ref: '#/components/responses/Error'
+        '429':
+          $ref: '#/components/responses/Error'
+
+  /dap/v1/connections/request:
+    post:
+      operationId: create_connection
+      summary: Request a new connection (NONE → REQUESTED)
+      description: Unilateral — only the initiator's consent is needed.
+      tags: [Connections]
+      security:
+        - apiKey: []
+          bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [recipient_token, request_id]
+              properties:
+                recipient_token:
+                  type: string
+                request_id:
+                  type: string
+                  format: uuid
+                intent:
+                  type: string
+      responses:
+        '201':
+          description: Connection created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectionRecord'
+        '401':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+
+  /dap/v1/connections/{connectionId}:
+    get:
+      operationId: get_connection
+      summary: Get connection record
+      tags: [Connections]
+      security:
+        - apiKey: []
+          bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/connectionId'
+      responses:
+        '200':
+          description: Connection record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectionRecord'
+        '401':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+
+  /dap/v1/connections/{connectionId}/respond:
+    post:
+      operationId: respond_connection
+      summary: Accept, decline, or block a connection request
+      description: "accept → MATCHED, decline → NONE, block → TERMINATED"
+      tags: [Connections]
+      security:
+        - apiKey: []
+          bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/connectionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RespondRequest'
+      responses:
+        '200':
+          description: Response recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectionRecord'
+        '401':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+
+  /dap/v1/connections/{connectionId}/upgrade:
+    post:
+      operationId: upgrade_connection
+      summary: Request bilateral state upgrade
+      description: Both participants must request the same target state. Valid upgrades MATCHED → ENGAGED, ENGAGED → OPEN.
+      tags: [Connections]
+      security:
+        - apiKey: []
+          bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/connectionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpgradeRequest'
+      responses:
+        '200':
+          description: Upgrade recorded (may be pending other participant)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectionRecord'
+        '401':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+
+  /dap/v1/connections/{connectionId}/withdraw:
+    post:
+      operationId: withdraw_connection
+      summary: Withdraw from connection → TERMINATED
+      description: Unilateral. Either principal, any active state. Cannot be reactivated.
+      tags: [Connections]
+      security:
+        - apiKey: []
+          bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/connectionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [request_id]
+              properties:
+                request_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Connection terminated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectionRecord'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+
+  /dap/v1/connections/{connectionId}/block:
+    post:
+      operationId: block_connection
+      summary: Permanently block connection → TERMINATED
+      description: Prevents future connections between these principals.
+      tags: [Connections]
+      security:
+        - apiKey: []
+          bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/connectionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [request_id]
+              properties:
+                request_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Connection blocked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectionRecord'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+
+  /dap/v1/connections/pending:
+    get:
+      operationId: list_pending
+      summary: List pending requests and upgrade approvals
+      tags: [Connections]
+      security:
+        - apiKey: []
+          bearerAuth: []
+      responses:
+        '200':
+          description: Pending items
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  requests:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ConnectionRecord'
+                  upgrades:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ConnectionRecord'
+        '401':
+          $ref: '#/components/responses/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+    apiKey:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  parameters:
+    connectionId:
+      name: connectionId
+      in: path
+      required: true
+      schema:
+        type: string
+
+  responses:
+    Error:
+      description: Error response (RFC 7807)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/DAPError'
+
+  schemas:
+    ConnectionState:
+      type: string
+      enum: [NONE, REQUESTED, MATCHED, ENGAGED, OPEN, TERMINATED]
+
+    Participant:
+      type: object
+      required: [principal_token, state]
+      properties:
+        principal_token:
+          type: string
+        state:
+          $ref: '#/components/schemas/ConnectionState'
+
+    ConnectionRecord:
+      type: object
+      required: [connection_id, participants, effective_state, version, created_at, updated_at]
+      properties:
+        connection_id:
+          type: string
+        participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/Participant'
+          minItems: 2
+          maxItems: 2
+        effective_state:
+          $ref: '#/components/schemas/ConnectionState'
+        version:
+          type: integer
+          description: Monotonically increasing; incremented on every state change
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    IdentityResponse:
+      type: object
+      required: [verified, verification_level]
+      properties:
+        verified:
+          type: boolean
+        verification_level:
+          type: string
+          enum: [none, basic, standard, strong]
+        member_since_days:
+          type: integer
+
+    DiscoveryRequest:
+      type: object
+      properties:
+        intents:
+          type: array
+          items:
+            type: string
+        filters:
+          type: object
+          additionalProperties: true
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 10
+
+    DiscoveryResponse:
+      type: object
+      required: [candidates]
+      properties:
+        candidates:
+          type: array
+          items:
+            $ref: '#/components/schemas/Candidate'
+
+    Candidate:
+      type: object
+      required: [principal_token]
+      properties:
+        principal_token:
+          type: string
+        compatibility_score:
+          type: number
+          minimum: 0
+          maximum: 1
+        verified:
+          type: boolean
+        shared_topic_count:
+          type: integer
+
+    RespondRequest:
+      type: object
+      required: [decision, request_id]
+      properties:
+        decision:
+          type: string
+          enum: [accept, decline, block]
+        request_id:
+          type: string
+          format: uuid
+
+    UpgradeRequest:
+      type: object
+      required: [requested_state, request_id]
+      properties:
+        requested_state:
+          $ref: '#/components/schemas/ConnectionState'
+        request_id:
+          type: string
+          format: uuid
+
+    ProviderCard:
+      type: object
+      required: [schema, domain, name, endpoints, supported_states]
+      properties:
+        schema:
+          type: string
+          example: "dap:provider:v1"
+        domain:
+          type: string
+        name:
+          type: string
+        endpoints:
+          type: object
+          properties:
+            identity:
+              type: string
+              format: uri
+            discovery:
+              type: string
+              format: uri
+            connections:
+              type: string
+              format: uri
+        supported_states:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConnectionState'
+        policies:
+          type: object
+          additionalProperties: true
+
+    DAPError:
+      type: object
+      required: [type, status, title]
+      properties:
+        type:
+          type: string
+        status:
+          type: integer
+        title:
+          type: string
+        detail:
+          type: string

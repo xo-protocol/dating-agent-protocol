@@ -1,0 +1,34 @@
+{
+  "$schema": "https://dap-protocol.org/schemas/social-agent-card-v1.json",
+  "_comment": "A2A Agent Card extended with DAP social fields",
+
+  "name": "Personal Social Agent",
+  "description": "DAP-enabled agent helping my principal find meaningful connections",
+  "url": "https://my-agent.example.com/.well-known/agent.json",
+  "version": "1.0.0",
+
+  "capabilities": {
+    "a2a": ["messaging", "task_management"],
+    "dap": ["discovery", "consent", "match", "reveal", "identity", "contact"]
+  },
+
+  "protocols": {
+    "a2a": {
+      "version": "0.3",
+      "endpoint": "https://my-agent.example.com/a2a"
+    },
+    "dap": {
+      "version": "0.1.0",
+      "consent_endpoint": "https://my-agent.example.com/dap/consent",
+      "providers": ["xo.social"],
+      "intents": ["friendship", "conversation"],
+      "availability": "active",
+      "supported_stages": ["discovery", "match", "reveal", "identity", "contact"]
+    }
+  },
+
+  "authentication": {
+    "type": "oauth2",
+    "token_url": "https://my-agent.example.com/oauth/token"
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "$schema": "https://dap-protocol.org/schemas/provider-card-v1.json",
+  "_comment": "Example: XO as a DAP provider. Serve this at /.well-known/dap-provider.json",
+
+  "schema": "dap:discovery:provider-card:v1",
+  "domain": "xo.social",
+  "name": "XO",
+  "description": "Social platform for genuine human connection",
+
+  "endpoints": {
+    "identity": "https://protocol.xo.social/dap/v1/identity",
+    "discovery": "https://protocol.xo.social/dap/v1/discover",
+    "consent": "https://protocol.xo.social/dap/v1/consent",
+    "reputation": "https://protocol.xo.social/dap/v1/reputation",
+    "conversation_aid": "https://protocol.xo.social/dap/v1/conversations"
+  },
+
+  "capabilities": {
+    "identity_levels": ["basic", "standard", "strong"],
+    "max_verification_methods": 25,
+    "intents_supported": [
+      "friendship",
+      "romance",
+      "conversation",
+      "emotional_support"
+    ],
+    "reputation_system": true,
+    "conversation_aid": true,
+    "supported_stages": ["discovery", "match", "reveal", "identity", "contact"],
+    "active_principals": "10k-100k"
+  },
+
+  "regions": ["TW", "JP", "US"],
+  "languages": ["zh-Hant", "en", "ja"],
+
+  "authentication": {
+    "type": "oauth2",
+    "authorization_url": "https://xoxo.space/oauth/authorize",
+    "token_url": "https://protocol.xo.social/dap/v1/auth/token",
+    "scopes": ["identity", "connections", "reputation", "social_signals"],
+    "pkce_supported": true
+  },
+
+  "rate_limits": {
+    "discovery": "100/hour",
+    "consent": "20/hour",
+    "reputation": "200/hour"
+  },
+
+  "contact": "protocol@xoxo.space",
+  "documentation": "https://protocol.xo.social/docs"
+}

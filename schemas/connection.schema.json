@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dap-protocol.org/schemas/connection.schema.json",
+  "title": "DAP Connection Record",
+  "description": "The minimum connection record as defined by DAP Core Section 7.",
+  "type": "object",
+  "required": ["connection_id", "participants", "effective_state", "version", "created_at", "updated_at"],
+  "properties": {
+    "connection_id": {
+      "type": "string",
+      "description": "Unique identifier for this connection"
+    },
+    "participants": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["principal_token", "state"],
+        "properties": {
+          "principal_token": {
+            "type": "string",
+            "description": "Ephemeral, opaque token identifying the principal"
+          },
+          "state": {
+            "$ref": "#/$defs/ConnectionState"
+          }
+        },
+        "additionalProperties": true
+      },
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "effective_state": {
+      "$ref": "#/$defs/ConnectionState",
+      "description": "min(participant states) — the operative permission level"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Monotonically increasing, incremented on every state change"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "ConnectionState": {
+      "type": "string",
+      "enum": ["NONE", "REQUESTED", "MATCHED", "ENGAGED", "OPEN", "TERMINATED"]
+    }
+  }
+}

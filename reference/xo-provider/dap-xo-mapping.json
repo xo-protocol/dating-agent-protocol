@@ -1,0 +1,50 @@
+{
+  "$schema": "https://dap-protocol.org/schemas/provider-mapping-v1.json",
+  "_comment": "How XO maps its platform to DAP. Shows what is mapped, not implementation details.",
+
+  "identity": {
+    "dap_endpoint": "/dap/v1/identity/verify",
+    "capabilities": "Multi-method verification including biometric liveness, social accounts, and on-chain SBT",
+    "field_mapping": {
+      "verified": "Boolean from internal verification system",
+      "verification_level": "Computed from highest-strength verification method completed",
+      "methods": "Array of method categories used",
+      "sybil_resistance": "Derived from verification method strength"
+    }
+  },
+
+  "discovery": {
+    "dap_endpoint": "/dap/v1/discover",
+    "capabilities": "ML-based recommendation engine with vectorized interest matching",
+    "field_mapping": {
+      "compatibility_score": "Normalized 0-1 score from recommendation engine",
+      "shared_topic_count": "Count of overlapping interest categories",
+      "reputation_tier": "Internal tiers mapped to DAP standard tiers"
+    }
+  },
+
+  "reputation": {
+    "dap_endpoint": "/dap/v1/reputation/{principal_token}",
+    "capabilities": "Behavioral scoring system with anti-gaming mechanics and tiered leagues",
+    "field_mapping": {
+      "reputation_tier": "Internal multi-tier system mapped to DAP 4-tier standard",
+      "reputation_score": "Normalized 0-1 from cumulative behavioral score",
+      "consistency": "Computed from consecutive active periods"
+    }
+  },
+
+  "conversation_aid": {
+    "break_ice": {
+      "dap_endpoint": "/dap/v1/conversations/break-ice",
+      "capabilities": "Contextual conversation starters from dual-profile analysis"
+    },
+    "conversation_health": {
+      "dap_endpoint": "/dap/v1/conversations/health",
+      "capabilities": "Multi-signal conversation quality scoring with trend analysis"
+    },
+    "wingman": {
+      "dap_endpoint": "/dap/v1/conversations/wingman",
+      "capabilities": "Multi-stage conversation assistance pipeline, cost-optimized"
+    }
+  }
+}
